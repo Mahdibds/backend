@@ -1,72 +1,58 @@
 // Packages and Libraries
-
+var bodyParser = require('body-parser')
 var cors = require('cors');
 const express = require("express");
 const mongoose = require("mongoose");
-// const Router = require("./routers/users")
-// const Router1 = require("./routers/clubs")
+const Router = require("./routers/users")
+const Router1 = require("./routers/clubs")
 const Router2 = require("./routers/events")
 
 
 
 
-const app = express();
-
+const app = express()
 app.use(cors());
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }))
 
-app.use(express.json());
+// parse application/json
+app.use(bodyParser.json())
 
-const username = "Inesktiti";
-const password = "Inesktiti";
-const cluster = "realmcluster.0qx4f.mongodb.net";
-const dbname = "myFirstDatabase";
+app.use(express.json())
+app.use(express.urlencoded())
 
 
-mongoose.connect(
-    `mongodb+srv://${username}:${password}@realmcluster.0qx4f.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`,
-    {
-        useNewUrlParser: true,
-     
-        useUnifiedTopology: true
-    }
-);
-require("./models/event")
-require("./models/club")
-require("./models/user")
+mongoose.connect('mongodb+srv://test:test@cluster0.c9o2yvh.mongodb.net/?retryWrites=true&w=majority', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}, () => {
+    console.log("DB connected")
+})
 
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "connection error: "));
-db.once("open", function () {
-    console.log("Connected successfully");
-});
-
-// app.use(Router);
-// app.use(Router1);
-app.use("/events",Router2);
+app.use("/users", Router);
+app.use("/clubs", Router1);
+app.use("/events", Router2);
 
 
 
 app.listen(3000, () => {
-    console.log("Server is running at port 3000");
+    console.log("Server is running at port 4000");
 });
 
 
-/*
+
 //Routers
-const clubsRouter = require ('./routers/clubs');
-const usersRouter = require ('./routers/users');
-const eventsRouter = require ('./routers/events');
+const clubsRouter = require('./routers/clubs');
+const usersRouter = require('./routers/users');
+const eventsRouter = require('./routers/events');
 
-const api = process.env.API_URL;
 
-app.use( `${api}/clubs`, clubsRouter);
-app.use( `${api}/users`, usersRouter);
-app.use( `${api}/events`, eventsRouter);
+app.use(`/clubs`, clubsRouter);
+app.use(`http://localhost:3000/users`, usersRouter);
+app.use(`/events`, eventsRouter);
 
-*/
+
 module.exports = app;
 
-// Starting to listen to requests
-
-
+//Starting to listen to requests
 

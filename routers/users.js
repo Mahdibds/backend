@@ -4,15 +4,15 @@ const User = require("../models/user");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const app = express();
+const app = express.Router();
 
 
 
-app.get(`/`, async (req, res) =>{
+app.get(`/`, async (req, res) => {
     const userList = await User.find().select('-password');
 
-    if(!userList){
-        res.status(500),json({success: false})
+    if (!userList) {
+        res.status(500), json({ success: false })
     }
     res.send(userList);
 })
@@ -27,11 +27,11 @@ app.get("/users", async (request, response) => {
     }
 });
 
-app.get(`/:id`, async (req, res) =>{
+app.get(`/:id`, async (req, res) => {
     const user = await User.findById(req.params.id).select('-password');
 
-    if(!user){
-        res.status(500),json({message: 'The user with the given ID was not found .'})
+    if (!user) {
+        res.status(500), json({ message: 'The user with the given ID was not found .' })
     }
     res.status(200).send(user);
 })
@@ -47,57 +47,62 @@ app.post("/add_user", async (request, req) => {
     }
 });
 
-app.get('/login', async(req,res) =>{
-    const user = await User.findOne({email: req.body.email})
-    if(!user){
-        return res.status(400).send('The User not found');
+app.post('/login', async (req, res) => {
+    const body = req.body;
+    const user = await User.findOne({ email: body.email });
+    if (user) {
+        // check user password with hashed password stored in the database
+        const validPassword = await bcrypt.compare(body.password, user.password);
+        if (validPassword) {
+            res.status(200).json({
+                message: "get" });
+        } else {
+                res.status(400).json({ error: "Invalid Password" });
+            }
+    } else {
+            res.status(401).json({ error: "User does not exist" });
+        }
+    })
+
+app.post('/singup', async (req, res) => {
+    const body = req.body;
+
+    if (!(body.email && body.password)) {
+        return res.status(400).send({ error: "Data not formatted properly" });
     }
 
-   else
-        res.status(200).send({user: user.email });
+    // creating a new mongoose doc from user data
+    const user = new User(body);
+    // generate salt to hash password
+    const salt = await bcrypt.genSalt(10);
+    // now we set user password to hashed password
+    user.password = await bcrypt.hash(user.password, salt);
+    user.save().then((doc) => res.status(201).send(doc));
+});
 
-})
 
-app.post('/register', async (req,res) =>{
-    let user = new User({
-        firstname:req.body.firtsname,
-        lastname:req.body.lastsname,
-        email:req.body.email,
-        password:bcrypt.hashSync ( req.body.password, 16 ),
-        phone:req.body.phone,
-        isAdmin:req.body.isAdmin,
-        
-        avatar:req.body.avatar,
-        dateofbirth:req.body.dateofbirth,
-    })
-    user=await user.save();
 
-    if(!user)
-    return res.status(400).send('the user cannot be created!')
 
-    res.send(user);
-})
-
-app.get(`/get/count`, async (req, res) =>{
+app.get(`/get/count`, async (req, res) => {
     const userCount = await User.countDocuments((count) => count)
 
-    if(!userCount){
-        res.status(500),json({success: false})
+    if (!userCount) {
+        res.status(500), json({ success: false })
     }
     res.send({
-        userCount:userCount
+        userCount: userCount
     });
 })
 
-app.delete('/:id', async (req,res) =>{
-    User.findByIdAndRemove(req.params.id).then(users =>{
-        if(users){
-            return res.status(200).json({success: true, message : 'the users is deleted'})
-        }else{
-            return res.status(404).json({success : false , message:'users cannot deleted'})
+app.delete('/:id', async (req, res) => {
+    User.findByIdAndRemove(req.params.id).then(users => {
+        if (users) {
+            return res.status(200).json({ success: true, message: 'the users is deleted' })
+        } else {
+            return res.status(404).json({ success: false, message: 'users cannot deleted' })
         }
-    }).catch(err =>{
-        return res.status(400).json({success: false , error : err})
+    }).catch(err => {
+        return res.status(400).json({ success: false, error: err })
     })
 })
 
